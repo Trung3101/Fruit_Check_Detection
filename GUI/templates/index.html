@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HUIT AI - Fruit Detection</title>
+    <style>
+        :root {
+            --bg: #eef4f3;
+            --panel: #ffffff;
+            --ink: #17313c;
+            --muted: #5d727b;
+            --accent: #1f8c55;
+            --accent-hover: #166941;
+            --border: #dce8e5;
+            --danger: #d83f3f;
+            --warn: #de8c26;
+            --ok: #1f8c55;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: linear-gradient(135deg, #eef4f3, #f7fbfa);
+            color: var(--ink);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+
+        .page {
+            max-width: 1820px;
+            margin: 0 auto;
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .main-panel,
+        .side-panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 10px 24px rgba(17, 53, 52, 0.08);
+        }
+
+        .main-panel {
+            flex: 1;
+            padding: 24px;
+            min-width: 0;
+        }
+
+        .side-panel {
+            width: 380px;
+            padding: 18px;
+            position: sticky;
+            top: 20px;
+        }
+
+        h1 {
+            margin: 0 0 8px 0;
+            font-size: 28px;
+            color: #17313c;
+        }
+
+        .subtitle {
+            margin: 0 0 18px 0;
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        .tab-switcher {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            border: 1px solid #bad3ce;
+            background: #f5fbf9;
+            color: #1e4653;
+            border-radius: 10px;
+            padding: 9px 14px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .tab-btn.active {
+            background: #1f8c55;
+            border-color: #1f8c55;
+            color: #ffffff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-title {
+            margin: 2px 0 8px 0;
+            font-size: 24px;
+            color: #17313c;
+        }
+
+        .control-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(220px, 1fr));
+            gap: 14px;
+            align-items: end;
+        }
+
+        .field label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        .field select,
+        .field input[type="file"] {
+            width: 100%;
+            border: 1px solid #cfe0db;
+            border-radius: 10px;
+            padding: 10px;
+            font-size: 14px;
+            background: #fbfdfc;
+        }
+
+        .actions {
+            margin-top: 14px;
+        }
+
+        .camera-panel {
+            margin-top: 14px;
+            border: 1px solid #d6e5e2;
+            border-radius: 12px;
+            background: #f7fbfa;
+            padding: 12px;
+        }
+
+        .camera-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .camera-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #234b57;
+        }
+
+        .camera-status {
+            font-size: 12px;
+            color: #4f6770;
+        }
+
+        .camera-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        .btn.secondary {
+            background: #2f6974;
+        }
+
+        .btn.secondary:hover {
+            background: #24515a;
+        }
+
+        .btn.warn {
+            background: #9a4450;
+        }
+
+        .btn.warn:hover {
+            background: #7b3540;
+        }
+
+        .camera-preview-wrap {
+            border: 1px solid #d5e5e2;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #0f1f23;
+            min-height: 300px;
+            height: clamp(300px, 48vh, 560px);
+            display: grid;
+            place-items: center;
+        }
+
+        #cameraPreview {
+            width: 100%;
+            height: 100%;
+            max-height: none;
+            display: none;
+            object-fit: cover;
+            background: #0f1f23;
+        }
+
+        .camera-placeholder {
+            padding: 12px;
+            font-size: 13px;
+            color: #6d8790;
+            text-align: center;
+        }
+
+        .btn {
+            background: var(--accent);
+            color: #ffffff;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 22px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn:hover { background: var(--accent-hover); }
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #resultVideo,
+        #trackingResultVideo {
+            width: 100%;
+            max-height: 560px;
+            margin-top: 18px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            background: #f6f9f8;
+            display: none;
+        }
+
+        .line-panel {
+            margin-top: 16px;
+            border: 1px solid #d6e5e2;
+            border-radius: 12px;
+            background: #f7fbfa;
+            padding: 12px;
+        }
+
+        .line-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .line-title {
+            font-size: 14px;
+            font-weight: 700;
+            color: #234b57;
+        }
+
+        #lineStatus {
+            font-size: 12px;
+            color: #4f6770;
+        }
+
+        .line-canvas-wrap {
+            border: 1px solid #d5e5e2;
+            border-radius: 10px;
+            overflow: hidden;
+            background: #111b1d;
+            min-height: 260px;
+            display: grid;
+            place-items: center;
+        }
+
+        #trackingLineCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: 560px;
+            background: #111b1d;
+            cursor: crosshair;
+        }
+
+        #lineInfo {
+            margin-top: 8px;
+            color: #2c4b56;
+            font-size: 13px;
+        }
+
+        .summary-table-block {
+            margin-top: 14px;
+            border: 1px solid #d6e5e2;
+            border-radius: 12px;
+            background: #f8fbfa;
+            overflow: hidden;
+        }
+
+        .summary-table-title {
+            padding: 10px 12px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #244955;
+            border-bottom: 1px solid #e3efec;
+            background: #f2f8f6;
+        }
+
+        .summary-table-wrap {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        .summary-table-wrap table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .summary-table-wrap th,
+        .summary-table-wrap td {
+            padding: 8px 10px;
+            border-bottom: 1px solid #e6efec;
+            text-align: left;
+        }
+
+        #imageResults {
+            display: none;
+            margin-top: 18px;
+        }
+
+        .result-gallery {
+            display: grid;
+            grid-template-columns: minmax(220px, 270px) minmax(0, 1fr);
+            gap: 18px;
+            align-items: start;
+        }
+
+        .result-list-panel {
+            border: 1px solid #d6e5e2;
+            border-radius: 12px;
+            background: #f8fbfa;
+            overflow: hidden;
+        }
+
+        .result-list-title {
+            padding: 10px 12px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #244955;
+            border-bottom: 1px solid #e3efec;
+            background: #f2f8f6;
+        }
+
+        .result-list-note {
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #4f6770;
+            border-bottom: 1px solid #e8f1ef;
+            background: #f8fbfa;
+        }
+
+        .result-list {
+            max-height: 720px;
+            overflow-y: auto;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .result-item-btn {
+            width: 100%;
+            border: 1px solid #d2e4df;
+            border-left-width: 6px;
+            border-radius: 10px;
+            text-align: left;
+            padding: 8px 10px;
+            font-size: 13px;
+            cursor: pointer;
+            background: #ffffff;
+            color: #214754;
+        }
+
+        .result-item-btn.fresh-only {
+            border-left-color: #1f8c55;
+            background: #f2fbf5;
+        }
+
+        .result-item-btn.has-rotten {
+            border-left-color: #d83f3f;
+            background: #fff4f4;
+        }
+
+        .result-item-btn.active {
+            border-color: #267f86;
+            box-shadow: 0 0 0 2px rgba(38, 127, 134, 0.15);
+        }
+
+        .result-item-title {
+            display: block;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .result-item-meta {
+            display: block;
+            color: #4b6570;
+            font-size: 12px;
+        }
+
+        .result-viewer {
+            border: 1px solid #d6e5e2;
+            border-radius: 12px;
+            background: #f8fbfa;
+            overflow: hidden;
+            min-height: 520px;
+        }
+
+        .image-card {
+            border: 1px solid #d6e5e2;
+            border-radius: 12px;
+            background: #f8fbfa;
+            overflow: hidden;
+        }
+
+        .image-media-shell {
+            overflow: visible;
+            background: #ffffff;
+            max-height: none;
+        }
+
+        .image-card-title {
+            padding: 10px 12px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #244955;
+            border-bottom: 1px solid #e3efec;
+            background: #f2f8f6;
+        }
+
+        .image-card img {
+            display: block;
+            width: 100%;
+            max-height: none;
+            object-fit: contain;
+            background: #ffffff;
+        }
+
+        .result-viewer img {
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+            object-fit: contain;
+        }
+
+        .rotten-badge {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: #d83f3f;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        #result {
+            margin-top: 16px;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--warn);
+        }
+
+        #summary {
+            margin-top: 8px;
+            color: #284a57;
+            font-size: 14px;
+        }
+
+        #classList {
+            margin-top: 12px;
+            color: #1e3f4b;
+            font-size: 14px;
+        }
+
+        .class-title {
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .class-list {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        #details {
+            margin-top: 12px;
+            max-height: 260px;
+            overflow-y: auto;
+            border-top: 1px solid #e7efed;
+            padding-top: 10px;
+        }
+
+        .pred-item {
+            margin: 4px 0;
+            font-size: 13px;
+            color: #2c4b56;
+        }
+
+        .feedback-section {
+            margin-top: 16px;
+            border-top: 1px dashed #cfe0db;
+            padding-top: 12px;
+            display: none;
+        }
+
+        .feedback-title {
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .feedback-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .feedback-btn {
+            border: none;
+            border-radius: 8px;
+            padding: 9px 12px;
+            cursor: pointer;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .feedback-btn.correct { background: #1f8c55; }
+        .feedback-btn.minor_issue { background: #de8c26; }
+        .feedback-btn.wrong { background: #d83f3f; }
+
+        #feedbackMessage {
+            margin-top: 8px;
+            color: #436472;
+            font-size: 13px;
+        }
+
+        .side-panel h2 {
+            margin: 4px 0 12px 0;
+            font-size: 20px;
+        }
+
+        .table-wrap {
+            max-height: 78vh;
+            overflow: auto;
+            border: 1px solid #e2ece9;
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead th {
+            position: sticky;
+            top: 0;
+            background: #f0f6f4;
+            z-index: 1;
+            text-align: left;
+            padding: 9px 8px;
+            border-bottom: 1px solid #dbe8e5;
+            white-space: nowrap;
+        }
+
+        tbody td {
+            border-bottom: 1px solid #ecf3f1;
+            padding: 8px;
+            vertical-align: top;
+            color: #2e4a55;
+        }
+
+        .empty-row {
+            text-align: center;
+            color: #6d8790;
+            padding: 12px;
+        }
+
+        @media (max-width: 1120px) {
+            .page {
+                flex-direction: column;
+            }
+
+            .side-panel {
+                width: 100%;
+                position: static;
+            }
+
+            .control-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .result-gallery {
+                grid-template-columns: 1fr;
+            }
+
+            .result-list {
+                max-height: 260px;
+            }
+
+            .result-viewer img {
+                width: 100%;
+                max-width: 100%;
+                height: auto;
+            }
+
+            .camera-preview-wrap {
+                min-height: 220px;
+                height: clamp(220px, 42vh, 380px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <section class="main-panel">
+            <div class="tab-switcher">
+                <button id="fruitTabBtn" class="tab-btn active" type="button">Đếm Trái Cây</button>
+                <button id="objectTabBtn" class="tab-btn" type="button">Kiểm Tra Vật Thể</button>
+            </div>
+
+            <div id="fruitTabContent" class="tab-content active">
+                <h1 class="tab-title">Hệ Thống Đếm Trái Cây</h1>
+                <p class="subtitle">Upload ảnh/video hoặc mở camera trực tiếp, chọn model và bấm dự đoán để xem bounding box.</p>
+
+                <div class="control-grid">
+                    <div class="field">
+                        <label for="modelSelect">Chọn model</label>
+                        <select id="modelSelect"></select>
+                    </div>
+                    <div class="field">
+                        <label for="mediaInput">Chọn ảnh/video</label>
+                        <input type="file" id="mediaInput" accept="image/*,video/*" multiple>
+                    </div>
+                </div>
+
+                <div class="actions">
+                    <button id="predictBtn" class="btn">Dự Đoán Ngay</button>
+                </div>
+
+                <div class="camera-panel">
+                    <div class="camera-head">
+                        <div class="camera-title">Camera Trực Tiếp</div>
+                        <div id="cameraStatus" class="camera-status">Camera chưa mở.</div>
+                    </div>
+                    <div class="camera-actions">
+                        <button id="openCameraBtn" class="btn secondary" type="button">Mở Camera</button>
+                        <button id="stopCameraBtn" class="btn warn" type="button">Dừng Camera</button>
+                        <button id="detectCameraBtn" class="btn" type="button">Detect Từ Camera</button>
+                    </div>
+                    <div class="camera-preview-wrap">
+                        <video id="cameraPreview" autoplay playsinline muted></video>
+                        <div id="cameraPlaceholder" class="camera-placeholder">Nhấn "Mở Camera" để bắt đầu xem trước và detect frame hiện tại.</div>
+                    </div>
+                </div>
+
+                <video id="resultVideo" controls></video>
+                <div id="imageResults"></div>
+
+                <div id="result"></div>
+                <div id="summary"></div>
+                <div id="classList"></div>
+                <div id="details"></div>
+
+                <div id="feedbackSection" class="feedback-section">
+                    <div class="feedback-title">Đánh giá cho kết quả vừa dự đoán:</div>
+                    <div class="feedback-buttons">
+                        <button class="feedback-btn correct" data-feedback="correct">Dự Đoán Đúng</button>
+                        <button class="feedback-btn minor_issue" data-feedback="minor_issue">Còn Sai Sót</button>
+                        <button class="feedback-btn wrong" data-feedback="wrong">Dự Đoán Sai Hoàn Toàn</button>
+                    </div>
+                    <div id="feedbackMessage"></div>
+                </div>
+            </div>
+
+            <div id="objectTabContent" class="tab-content">
+                <h1 class="tab-title">Kiểm Tra Vật Thể</h1>
+                <p class="subtitle">Tải video bất kỳ, lấy frame đầu để vẽ line, sau đó Detect để tracking + counting object đi qua line.</p>
+
+                <div class="control-grid">
+                    <div class="field">
+                        <label for="trackingModelSelect">Chọn model</label>
+                        <select id="trackingModelSelect"></select>
+                    </div>
+                    <div class="field">
+                        <label for="trackingVideoInput">Chọn video (bắt buộc)</label>
+                        <input type="file" id="trackingVideoInput" accept="video/*">
+                    </div>
+                </div>
+
+                <div class="line-panel">
+                    <div class="line-head">
+                        <div class="line-title">Frame Đầu + Line Crossing</div>
+                        <div id="lineStatus">Chưa chọn video.</div>
+                    </div>
+                    <div class="line-canvas-wrap">
+                        <canvas id="trackingLineCanvas"></canvas>
+                    </div>
+                    <div id="lineInfo">Vẽ 1 line bằng cách kéo chuột trên frame đầu. Hệ thống sẽ tự ưu tiên line ngang/dọc.</div>
+                </div>
+
+                <div class="actions">
+                    <button id="clearLineBtn" class="btn secondary" type="button">Xóa Line</button>
+                    <button id="detectTrackingBtn" class="btn" type="button">Detect</button>
+                </div>
+
+                <video id="trackingResultVideo" controls></video>
+                <div id="trackingResult"></div>
+                <div id="trackingSummary"></div>
+
+                <div class="summary-table-block">
+                    <div class="summary-table-title">Tổng Hợp</div>
+                    <div class="summary-table-wrap">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Class</th>
+                                    <th>Số lượng qua line</th>
+                                </tr>
+                            </thead>
+                            <tbody id="trackingSummaryBody">
+                                <tr>
+                                    <td colspan="2" class="empty-row">Chưa có dữ liệu.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <aside class="side-panel">
+            <h2>Bảng Đánh Giá</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>File</th>
+                            <th>Model</th>
+                            <th>Loại</th>
+                            <th>Kết quả</th>
+                            <th>Số detect</th>
+                        </tr>
+                    </thead>
+                    <tbody id="feedbackBody">
+                        <tr>
+                            <td colspan="6" class="empty-row">Chưa có dữ liệu.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </aside>
+    </div>
+
+    <script>
+        const fruitTabBtn = document.getElementById('fruitTabBtn');
+        const objectTabBtn = document.getElementById('objectTabBtn');
+        const fruitTabContent = document.getElementById('fruitTabContent');
+        const objectTabContent = document.getElementById('objectTabContent');
+
+        const mediaInput = document.getElementById('mediaInput');
+        const modelSelect = document.getElementById('modelSelect');
+        const predictBtn = document.getElementById('predictBtn');
+        const openCameraBtn = document.getElementById('openCameraBtn');
+        const stopCameraBtn = document.getElementById('stopCameraBtn');
+        const detectCameraBtn = document.getElementById('detectCameraBtn');
+        const cameraPreview = document.getElementById('cameraPreview');
+        const cameraStatus = document.getElementById('cameraStatus');
+        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+
+        const resultVideo = document.getElementById('resultVideo');
+        const imageResultsDiv = document.getElementById('imageResults');
+
+        const resultDiv = document.getElementById('result');
+        const summaryDiv = document.getElementById('summary');
+        const classListDiv = document.getElementById('classList');
+        const detailsDiv = document.getElementById('details');
+
+        const feedbackSection = document.getElementById('feedbackSection');
+        const feedbackMessage = document.getElementById('feedbackMessage');
+        const feedbackBody = document.getElementById('feedbackBody');
+
+        const trackingModelSelect = document.getElementById('trackingModelSelect');
+        const trackingVideoInput = document.getElementById('trackingVideoInput');
+        const trackingLineCanvas = document.getElementById('trackingLineCanvas');
+        const lineStatus = document.getElementById('lineStatus');
+        const lineInfo = document.getElementById('lineInfo');
+        const clearLineBtn = document.getElementById('clearLineBtn');
+        const detectTrackingBtn = document.getElementById('detectTrackingBtn');
+        const trackingResultVideo = document.getElementById('trackingResultVideo');
+        const trackingResult = document.getElementById('trackingResult');
+        const trackingSummary = document.getElementById('trackingSummary');
+        const trackingSummaryBody = document.getElementById('trackingSummaryBody');
+
+        const trackingCtx = trackingLineCanvas.getContext('2d');
+        const cameraCaptureCanvas = document.createElement('canvas');
+
+        let selectedFiles = [];
+        let currentResultMeta = null;
+        let previewVideoUrl = null;
+        let cameraStream = null;
+
+        let trackingVideoFile = null;
+        let trackingFrameImage = null;
+        let trackingLineStart = null;
+        let trackingLineEnd = null;
+        let trackingCurrentPoint = null;
+        let trackingIsDrawing = false;
+        let trackingLoadToken = 0;
+
+        function escapeHtml(value) {
+            return String(value)
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function setActiveTab(tabKey) {
+            const fruitActive = tabKey === 'fruit';
+            fruitTabBtn.classList.toggle('active', fruitActive);
+            objectTabBtn.classList.toggle('active', !fruitActive);
+            fruitTabContent.classList.toggle('active', fruitActive);
+            objectTabContent.classList.toggle('active', !fruitActive);
+        }
+
+        function clearPreviewVideoUrl() {
+            if (previewVideoUrl) {
+                URL.revokeObjectURL(previewVideoUrl);
+                previewVideoUrl = null;
+            }
+        }
+
+        function isVideoFile(file) {
+            if (!file) return false;
+            if (file.type && file.type.startsWith('video/')) return true;
+            return /\.(mp4|avi|mov|mkv|webm|m4v)$/i.test(file.name || '');
+        }
+
+        function hideVideo(videoElement) {
+            videoElement.pause();
+            videoElement.style.display = 'none';
+            videoElement.removeAttribute('src');
+            videoElement.load();
+        }
+
+        function resetOutputs() {
+            resultDiv.innerText = '';
+            summaryDiv.innerText = '';
+            classListDiv.innerHTML = '';
+            detailsDiv.innerHTML = '';
+            imageResultsDiv.innerHTML = '';
+            imageResultsDiv.style.display = 'none';
+            imageResultsDiv.classList.remove('single-view', 'batch-view');
+            feedbackMessage.innerText = '';
+            feedbackSection.style.display = 'none';
+            currentResultMeta = null;
+        }
+
+        function resetTrackingOutputs() {
+            trackingResult.innerText = '';
+            trackingSummary.innerText = '';
+            hideVideo(trackingResultVideo);
+            trackingSummaryBody.innerHTML = '<tr><td colspan="2" class="empty-row">Chưa có dữ liệu.</td></tr>';
+        }
+
+        function renderClassList(classes) {
+            if (!Array.isArray(classes) || classes.length === 0) {
+                classListDiv.innerHTML = '<div class="class-title">Danh sách object nhận diện được: (trống)</div>';
+                return;
+            }
+
+            classListDiv.innerHTML = [
+                '<div class="class-title">Danh sách object nhận diện được:</div>',
+                `<ul class="class-list">${classes.map(name => `<li>${escapeHtml(name)}</li>`).join('')}</ul>`
+            ].join('');
+        }
+
+        function renderImageResults(imageResults) {
+            if (!Array.isArray(imageResults) || imageResults.length === 0) {
+                imageResultsDiv.innerHTML = '';
+                imageResultsDiv.style.display = 'none';
+                return;
+            }
+
+            const hasRottenLabel = (row) => {
+                const labelCounts = row && typeof row.label_counts === 'object' ? row.label_counts : {};
+                const byName = Object.keys(labelCounts).some((label) => String(label).toLowerCase().includes('rotten'));
+                const byCount = Number(row?.rotten_count || 0) > 0;
+                return byName || byCount;
+            };
+
+            const cacheBust = Date.now();
+            const listItems = imageResults.map((row, idx) => {
+                const sourceName = String(row.source_name || `image_${idx + 1}`);
+                const detectCount = Number(row.count || 0);
+                const rottenCount = Number(row.rotten_count || 0);
+                const hasRotten = hasRottenLabel(row);
+                const statusText = hasRotten
+                    ? `Có Rotten (${rottenCount})`
+                    : 'Không có Rotten';
+                const stateClass = hasRotten ? 'has-rotten' : 'fresh-only';
+
+                return `
+                    <button type="button" class="result-item-btn ${stateClass}" data-result-index="${idx}">
+                        <span class="result-item-title">Ảnh ${idx + 1}: ${escapeHtml(sourceName)}</span>
+                        <span class="result-item-meta">Detect=${detectCount} | ${escapeHtml(statusText)}</span>
+                    </button>
+                `;
+            }).join('');
+
+            imageResultsDiv.innerHTML = `
+                <div class="result-gallery">
+                    <aside class="result-list-panel">
+                        <div class="result-list-title">Kết Quả</div>
+                        <div class="result-list-note">Xanh: không có Rotten | Đỏ: có Rotten</div>
+                        <div class="result-list">${listItems}</div>
+                    </aside>
+                    <article class="result-viewer">
+                        <div class="image-card-title" data-viewer-title></div>
+                        <div class="image-media-shell">
+                            <img data-viewer-image alt="">
+                            <div data-viewer-empty class="pred-item" style="padding:10px 12px; display:none;">Không có ảnh kết quả để hiển thị.</div>
+                        </div>
+                    </article>
+                </div>
+            `;
+
+            const viewerTitle = imageResultsDiv.querySelector('[data-viewer-title]');
+            const viewerImage = imageResultsDiv.querySelector('[data-viewer-image]');
+            const viewerEmpty = imageResultsDiv.querySelector('[data-viewer-empty]');
+            const resultButtons = imageResultsDiv.querySelectorAll('[data-result-index]');
+
+            const renderSelected = (selectedIndex) => {
+                const row = imageResults[selectedIndex];
+                if (!row) return;
+
+                const sourceName = String(row.source_name || `image_${selectedIndex + 1}`);
+                const detectCount = Number(row.count || 0);
+                const rottenCount = Number(row.rotten_count || 0);
+                const hasRotten = hasRottenLabel(row);
+                const statusText = hasRotten
+                    ? `Có Rotten (${rottenCount})`
+                    : 'Không có Rotten';
+
+                viewerTitle.textContent = `Ảnh ${selectedIndex + 1}: ${sourceName} | Detect=${detectCount} | ${statusText}`;
+
+                const imageUrl = String(row.image_url || '').trim();
+                if (imageUrl) {
+                    viewerImage.src = `${imageUrl}?t=${cacheBust}-${selectedIndex}`;
+                    viewerImage.alt = sourceName;
+                    viewerImage.style.display = 'block';
+                    viewerEmpty.style.display = 'none';
+                } else {
+                    viewerImage.removeAttribute('src');
+                    viewerImage.style.display = 'none';
+                    viewerEmpty.style.display = 'block';
+                }
+
+                resultButtons.forEach((btn, idx) => {
+                    btn.classList.toggle('active', idx === selectedIndex);
+                });
+            };
+
+            resultButtons.forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const idx = Number(btn.getAttribute('data-result-index') || 0);
+                    renderSelected(idx);
+                });
+            });
+
+            renderSelected(0);
+            imageResultsDiv.style.display = 'block';
+        }
+
+        function setLoading(isLoading) {
+            predictBtn.disabled = isLoading;
+            detectCameraBtn.disabled = isLoading;
+            predictBtn.innerText = isLoading ? 'Đang xử lý...' : 'Dự Đoán Ngay';
+            detectCameraBtn.innerText = isLoading ? 'Đang xử lý...' : 'Detect Từ Camera';
+        }
+
+        function setTrackingLoading(isLoading) {
+            detectTrackingBtn.disabled = isLoading;
+            trackingVideoInput.disabled = isLoading;
+            clearLineBtn.disabled = isLoading;
+            detectTrackingBtn.innerText = isLoading ? 'Đang Detect...' : 'Detect';
+        }
+
+        function setCameraStatus(message, isError = false) {
+            cameraStatus.innerText = message;
+            cameraStatus.style.color = isError ? '#d83f3f' : '#4f6770';
+        }
+
+        function setLineStatus(message, isError = false) {
+            lineStatus.innerText = message;
+            lineStatus.style.color = isError ? '#d83f3f' : '#4f6770';
+        }
+
+        function hasActiveCamera() {
+            return Boolean(cameraStream && cameraStream.active);
+        }
+
+        async function openCamera() {
+            if (hasActiveCamera()) {
+                setCameraStatus('Camera đang hoạt động.');
+                return;
+            }
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                setCameraStatus('Trình duyệt không hỗ trợ camera API.', true);
+                return;
+            }
+
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' },
+                    audio: false,
+                });
+                cameraStream = stream;
+                cameraPreview.srcObject = stream;
+                cameraPreview.style.display = 'block';
+                cameraPlaceholder.style.display = 'none';
+                setCameraStatus('Camera đã mở. Có thể bấm Detect Từ Camera.');
+            } catch (err) {
+                setCameraStatus(`Không mở được camera: ${err.message || err}`, true);
+            }
+        }
+
+        function stopCamera() {
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+            cameraStream = null;
+            cameraPreview.srcObject = null;
+            cameraPreview.style.display = 'none';
+            cameraPlaceholder.style.display = 'block';
+            setCameraStatus('Camera đã dừng.');
+        }
+
+        function captureCameraFrameAsBlob() {
+            return new Promise((resolve, reject) => {
+                if (!hasActiveCamera()) {
+                    reject(new Error('Camera chưa mở.'));
+                    return;
+                }
+
+                const width = Number(cameraPreview.videoWidth || 0);
+                const height = Number(cameraPreview.videoHeight || 0);
+                if (width <= 0 || height <= 0) {
+                    reject(new Error('Camera chưa sẵn sàng frame. Vui lòng thử lại sau 1-2 giây.'));
+                    return;
+                }
+
+                cameraCaptureCanvas.width = width;
+                cameraCaptureCanvas.height = height;
+                const ctx = cameraCaptureCanvas.getContext('2d');
+                if (!ctx) {
+                    reject(new Error('Không thể tạo canvas context để chụp frame.'));
+                    return;
+                }
+
+                ctx.drawImage(cameraPreview, 0, 0, width, height);
+                cameraCaptureCanvas.toBlob((blob) => {
+                    if (!blob) {
+                        reject(new Error('Không thể chuyển frame camera thành ảnh.'));
+                        return;
+                    }
+                    resolve(blob);
+                }, 'image/jpeg', 0.92);
+            });
+        }
+
+        function renderFeedbackTable(rows) {
+            if (!Array.isArray(rows) || rows.length === 0) {
+                feedbackBody.innerHTML = '<tr><td colspan="6" class="empty-row">Chưa có dữ liệu.</td></tr>';
+                return;
+            }
+
+            feedbackBody.innerHTML = rows.map(row => `
+                <tr>
+                    <td>${escapeHtml(row.time || '')}</td>
+                    <td>${escapeHtml(row.source_name || '')}</td>
+                    <td>${escapeHtml(row.model_name || '')}</td>
+                    <td>${escapeHtml(row.media_type || '')}</td>
+                    <td>${escapeHtml(row.feedback_label || '')}</td>
+                    <td>${Number.isFinite(Number(row.count)) ? Number(row.count) : 0}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderTrackingSummaryTable(rows) {
+            if (!Array.isArray(rows) || rows.length === 0) {
+                trackingSummaryBody.innerHTML = '<tr><td colspan="2" class="empty-row">Chưa có object nào đi qua line.</td></tr>';
+                return;
+            }
+
+            trackingSummaryBody.innerHTML = rows.map((row) => {
+                const label = escapeHtml(String(row.label || 'unknown'));
+                const count = Number(row.count || 0);
+                return `<tr><td>${label}</td><td>${count}</td></tr>`;
+            }).join('');
+        }
+
+        async function loadFeedbackTable() {
+            try {
+                const response = await fetch('/feedbacks');
+                const data = await response.json();
+                if (data.status === 'success') {
+                    renderFeedbackTable(data.rows || []);
+                }
+            } catch (_) {
+                // Keep old rows if fetching history fails.
+            }
+        }
+
+        function populateModelSelect(selectElement, models, defaultKey) {
+            selectElement.innerHTML = '';
+            let selectedKey = '';
+
+            for (const model of models) {
+                const option = document.createElement('option');
+                option.value = model.key;
+                option.textContent = model.loaded
+                    ? model.name
+                    : `${model.name} (không khả dụng)`;
+                option.disabled = !model.loaded;
+                selectElement.appendChild(option);
+
+                if (!selectedKey && model.loaded && model.key === defaultKey) {
+                    selectedKey = model.key;
+                }
+            }
+
+            if (!selectedKey) {
+                const firstEnabled = [...selectElement.options].find(option => !option.disabled);
+                if (firstEnabled) {
+                    selectedKey = firstEnabled.value;
+                }
+            }
+
+            if (selectedKey) {
+                selectElement.value = selectedKey;
+            }
+
+            return selectedKey;
+        }
+
+        async function loadModels() {
+            try {
+                const response = await fetch('/models');
+                const data = await response.json();
+
+                if (data.status !== 'success') {
+                    throw new Error(data.error || 'Cannot load model list.');
+                }
+
+                const models = data.models || [];
+                const defaultKey = data.default_model || '';
+
+                const selectedPredictModel = populateModelSelect(modelSelect, models, defaultKey);
+                const selectedTrackingModel = populateModelSelect(trackingModelSelect, models, defaultKey);
+
+                const hasPredictModel = Boolean(selectedPredictModel);
+                const hasTrackingModel = Boolean(selectedTrackingModel);
+
+                predictBtn.disabled = !hasPredictModel;
+                detectTrackingBtn.disabled = !hasTrackingModel;
+
+                if (!hasPredictModel) {
+                    resultDiv.innerText = '❌ Không có model khả dụng để dự đoán.';
+                }
+                if (!hasTrackingModel) {
+                    trackingResult.innerText = '❌ Không có model khả dụng cho tab Kiểm Tra Vật Thể.';
+                }
+            } catch (err) {
+                predictBtn.disabled = true;
+                detectTrackingBtn.disabled = true;
+                resultDiv.innerText = `❌ Không thể tải danh sách model: ${err.message || err}`;
+                trackingResult.innerText = `❌ Không thể tải model cho Kiểm Tra Vật Thể: ${err.message || err}`;
+            }
+        }
+
+        function mapEventToCanvasPoint(event) {
+            const rect = trackingLineCanvas.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) {
+                return null;
+            }
+
+            const scaleX = trackingLineCanvas.width / rect.width;
+            const scaleY = trackingLineCanvas.height / rect.height;
+            const x = (event.clientX - rect.left) * scaleX;
+            const y = (event.clientY - rect.top) * scaleY;
+
+            return {
+                x: Math.max(0, Math.min(trackingLineCanvas.width - 1, x)),
+                y: Math.max(0, Math.min(trackingLineCanvas.height - 1, y)),
+            };
+        }
+
+        function getSnappedPoint(anchor, point) {
+            if (!anchor || !point) return point;
+
+            const dx = Math.abs(point.x - anchor.x);
+            const dy = Math.abs(point.y - anchor.y);
+
+            if (dx > dy * 1.2) {
+                return { x: point.x, y: anchor.y };
+            }
+            if (dy > dx * 1.2) {
+                return { x: anchor.x, y: point.y };
+            }
+            return point;
+        }
+
+        function updateLineInfo() {
+            if (trackingLineStart && trackingLineEnd) {
+                lineInfo.innerText = `Line: (${Math.round(trackingLineStart.x)}, ${Math.round(trackingLineStart.y)}) -> (${Math.round(trackingLineEnd.x)}, ${Math.round(trackingLineEnd.y)})`;
+                return;
+            }
+
+            if (trackingLineStart && trackingCurrentPoint) {
+                lineInfo.innerText = `Đang vẽ: (${Math.round(trackingLineStart.x)}, ${Math.round(trackingLineStart.y)}) -> (${Math.round(trackingCurrentPoint.x)}, ${Math.round(trackingCurrentPoint.y)})`;
+                return;
+            }
+
+            lineInfo.innerText = 'Vẽ 1 line bằng cách kéo chuột trên frame đầu. Hệ thống sẽ tự ưu tiên line ngang/dọc.';
+        }
+
+        function renderTrackingCanvas() {
+            const w = Number(trackingLineCanvas.width || 0);
+            const h = Number(trackingLineCanvas.height || 0);
+            if (w <= 0 || h <= 0 || !trackingCtx) return;
+
+            trackingCtx.clearRect(0, 0, w, h);
+
+            if (trackingFrameImage) {
+                trackingCtx.drawImage(trackingFrameImage, 0, 0, w, h);
+            } else {
+                trackingCtx.fillStyle = '#1a2426';
+                trackingCtx.fillRect(0, 0, w, h);
+                trackingCtx.fillStyle = '#c7d6d2';
+                trackingCtx.font = '14px Segoe UI';
+                trackingCtx.fillText('Chọn video để hiển thị frame đầu.', 20, 30);
+            }
+
+            const p1 = trackingLineStart;
+            const p2 = trackingLineEnd || trackingCurrentPoint;
+            if (p1 && p2) {
+                trackingCtx.strokeStyle = '#ffe900';
+                trackingCtx.lineWidth = 2;
+                trackingCtx.beginPath();
+                trackingCtx.moveTo(p1.x, p1.y);
+                trackingCtx.lineTo(p2.x, p2.y);
+                trackingCtx.stroke();
+
+                trackingCtx.fillStyle = '#ffe900';
+                trackingCtx.beginPath();
+                trackingCtx.arc(p1.x, p1.y, 4, 0, Math.PI * 2);
+                trackingCtx.arc(p2.x, p2.y, 4, 0, Math.PI * 2);
+                trackingCtx.fill();
+            }
+
+            updateLineInfo();
+        }
+
+        function clearLineSelection() {
+            trackingLineStart = null;
+            trackingLineEnd = null;
+            trackingCurrentPoint = null;
+            trackingIsDrawing = false;
+            renderTrackingCanvas();
+            if (trackingFrameImage) {
+                setLineStatus('Đã xóa line. Vẽ lại để detect.', false);
+            }
+        }
+
+        async function extractFirstFrameImage(videoFile) {
+            const objectUrl = URL.createObjectURL(videoFile);
+            const video = document.createElement('video');
+            video.preload = 'auto';
+            video.muted = true;
+            video.playsInline = true;
+
+            try {
+                await new Promise((resolve, reject) => {
+                    const onLoaded = () => {
+                        cleanup();
+                        resolve();
+                    };
+                    const onError = () => {
+                        cleanup();
+                        reject(new Error('Không thể đọc metadata từ video.'));
+                    };
+                    const cleanup = () => {
+                        video.removeEventListener('loadeddata', onLoaded);
+                        video.removeEventListener('error', onError);
+                    };
+                    video.addEventListener('loadeddata', onLoaded);
+                    video.addEventListener('error', onError);
+                    video.src = objectUrl;
+                });
+
+                const frameWidth = Number(video.videoWidth || 0);
+                const frameHeight = Number(video.videoHeight || 0);
+                if (frameWidth <= 0 || frameHeight <= 0) {
+                    throw new Error('Video không có frame hợp lệ.');
+                }
+
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = frameWidth;
+                tempCanvas.height = frameHeight;
+                const tempCtx = tempCanvas.getContext('2d');
+                if (!tempCtx) {
+                    throw new Error('Không thể tạo canvas để đọc frame đầu.');
+                }
+
+                tempCtx.drawImage(video, 0, 0, frameWidth, frameHeight);
+                const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.95);
+                const image = new Image();
+                await new Promise((resolve, reject) => {
+                    image.onload = () => resolve();
+                    image.onerror = () => reject(new Error('Không thể decode frame đầu tiên.'));
+                    image.src = dataUrl;
+                });
+
+                return { image, frameWidth, frameHeight };
+            } finally {
+                URL.revokeObjectURL(objectUrl);
+                video.removeAttribute('src');
+                video.load();
+            }
+        }
+
+        function setupTrackingCanvasInteractions() {
+            trackingLineCanvas.addEventListener('mousedown', (event) => {
+                if (!trackingFrameImage) return;
+                const point = mapEventToCanvasPoint(event);
+                if (!point) return;
+
+                trackingIsDrawing = true;
+                trackingLineStart = point;
+                trackingCurrentPoint = point;
+                trackingLineEnd = null;
+                renderTrackingCanvas();
+            });
+
+            trackingLineCanvas.addEventListener('mousemove', (event) => {
+                if (!trackingIsDrawing || !trackingLineStart) return;
+                const point = mapEventToCanvasPoint(event);
+                if (!point) return;
+                trackingCurrentPoint = getSnappedPoint(trackingLineStart, point);
+                renderTrackingCanvas();
+            });
+
+            const finishDrawing = (event) => {
+                if (!trackingIsDrawing || !trackingLineStart) return;
+                trackingIsDrawing = false;
+
+                let endPoint = trackingCurrentPoint;
+                if (event) {
+                    const point = mapEventToCanvasPoint(event);
+                    if (point) {
+                        endPoint = getSnappedPoint(trackingLineStart, point);
+                    }
+                }
+
+                if (!endPoint) {
+                    clearLineSelection();
+                    return;
+                }
+
+                const dx = endPoint.x - trackingLineStart.x;
+                const dy = endPoint.y - trackingLineStart.y;
+                const length = Math.sqrt((dx * dx) + (dy * dy));
+                if (length < 5) {
+                    clearLineSelection();
+                    setLineStatus('Line quá ngắn. Hãy vẽ lại line dài hơn.', true);
+                    return;
+                }
+
+                trackingLineEnd = endPoint;
+                trackingCurrentPoint = null;
+                renderTrackingCanvas();
+                setLineStatus('Đã lưu line. Có thể nhấn Detect.', false);
+            };
+
+            trackingLineCanvas.addEventListener('mouseup', (event) => finishDrawing(event));
+            trackingLineCanvas.addEventListener('mouseleave', () => finishDrawing(null));
+        }
+
+        mediaInput.addEventListener('change', () => {
+            clearPreviewVideoUrl();
+            resetOutputs();
+
+            selectedFiles = Array.from(mediaInput.files || []);
+            if (selectedFiles.length === 0) {
+                hideVideo(resultVideo);
+                return;
+            }
+
+            const videoFiles = selectedFiles.filter(file => isVideoFile(file));
+            if (videoFiles.length > 0 && selectedFiles.length > 1) {
+                selectedFiles = [];
+                mediaInput.value = '';
+                hideVideo(resultVideo);
+                resultDiv.innerText = '❌ Chỉ hỗ trợ upload nhiều file cho ảnh. Nếu dùng video, hãy chọn đúng 1 video.';
+                return;
+            }
+
+            if (videoFiles.length === 1) {
+                hideVideo(resultVideo);
+                previewVideoUrl = URL.createObjectURL(videoFiles[0]);
+                resultVideo.src = previewVideoUrl;
+                resultVideo.style.display = 'block';
+                resultVideo.load();
+                summaryDiv.innerText = `Đã chọn video: ${videoFiles[0].name}`;
+                return;
+            }
+
+            hideVideo(resultVideo);
+            summaryDiv.innerText = selectedFiles.length > 1
+                ? `Đã chọn ${selectedFiles.length} ảnh để dự đoán batch.`
+                : `Đã chọn ảnh: ${selectedFiles[0].name}`;
+        });
+
+        trackingVideoInput.addEventListener('change', async () => {
+            resetTrackingOutputs();
+            const files = Array.from(trackingVideoInput.files || []);
+            if (files.length <= 0) {
+                trackingVideoFile = null;
+                trackingFrameImage = null;
+                clearLineSelection();
+                setLineStatus('Chưa chọn video.', false);
+                return;
+            }
+
+            const file = files[0];
+            if (!isVideoFile(file)) {
+                trackingVideoInput.value = '';
+                trackingVideoFile = null;
+                trackingFrameImage = null;
+                clearLineSelection();
+                setLineStatus('File không phải video hợp lệ.', true);
+                return;
+            }
+
+            trackingVideoFile = file;
+            trackingFrameImage = null;
+            clearLineSelection();
+            setLineStatus('Đang trích frame đầu từ video...', false);
+
+            const token = ++trackingLoadToken;
+            try {
+                const frame = await extractFirstFrameImage(file);
+                if (token !== trackingLoadToken) {
+                    return;
+                }
+
+                trackingLineCanvas.width = frame.frameWidth;
+                trackingLineCanvas.height = frame.frameHeight;
+                trackingFrameImage = frame.image;
+                clearLineSelection();
+                renderTrackingCanvas();
+                setLineStatus(`Đã tải frame đầu (${frame.frameWidth}x${frame.frameHeight}). Hãy vẽ line rồi Detect.`, false);
+            } catch (err) {
+                trackingVideoFile = null;
+                trackingFrameImage = null;
+                clearLineSelection();
+                setLineStatus(`Không thể đọc frame đầu: ${err.message || err}`, true);
+            }
+        });
+
+        async function requestPredict(formData, sourceNameFallback) {
+            setLoading(true);
+            resultDiv.innerText = '⏳ Đang xử lý...';
+            summaryDiv.innerText = '';
+            classListDiv.innerHTML = '';
+            detailsDiv.innerHTML = '';
+            imageResultsDiv.innerHTML = '';
+            imageResultsDiv.style.display = 'none';
+            imageResultsDiv.classList.remove('single-view', 'batch-view');
+            feedbackMessage.innerText = '';
+            feedbackSection.style.display = 'none';
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const data = await response.json();
+
+                if (data.status !== 'success') {
+                    throw new Error(data.error || 'Predict failed.');
+                }
+
+                currentResultMeta = {
+                    model_key: data.model_key,
+                    model_name: data.model_name,
+                    media_type: data.media_type,
+                    source_name: data.source_name || sourceNameFallback || 'camera_capture.jpg',
+                    count: Number(data.count || 0),
+                };
+
+                const labelCounts = data.label_counts || {};
+                const summaryText = Object.entries(labelCounts)
+                    .map(([label, count]) => `${label}: ${count}`)
+                    .join(' | ');
+                const baseSummary = summaryText
+                    ? `Phân bố nhãn: ${summaryText}`
+                    : 'Không có nhãn nào sau lọc ngưỡng.';
+
+                renderClassList(data.classes || []);
+
+                if (data.media_type === 'video') {
+                    imageResultsDiv.innerHTML = '';
+                    imageResultsDiv.style.display = 'none';
+                    imageResultsDiv.classList.remove('single-view', 'batch-view');
+
+                    resultVideo.src = `${data.video_url}?t=${Date.now()}`;
+                    resultVideo.style.display = 'block';
+                    resultVideo.load();
+                    resultVideo.currentTime = 0;
+                    resultVideo.play().catch(() => {
+                        // Autoplay can be blocked by browser policy; controls stay available.
+                    });
+
+                    resultDiv.innerHTML = `✅ Kết quả (${escapeHtml(data.model_name)}): Tìm thấy <span style="color:#d83f3f">${Number(data.count || 0)}</span> đối tượng.`;
+
+                    const processedFrames = Number(data.processed_frames || 0);
+                    const outputFps = Number(data.output_fps || 0);
+                    const outputDuration = Number(data.output_duration_sec || 0);
+                    const outputCodec = String(data.output_codec || '').trim();
+                    const outputFormat = String(data.output_format || '').trim();
+
+                    const timingParts = [];
+                    if (processedFrames > 0) timingParts.push(`frames=${processedFrames}`);
+                    if (outputFps > 0) timingParts.push(`fps=${outputFps.toFixed(2)}`);
+                    if (outputDuration > 0) timingParts.push(`duration≈${outputDuration.toFixed(2)}s`);
+                    if (outputCodec) timingParts.push(`codec=${outputCodec}`);
+                    if (outputFormat) timingParts.push(`format=${outputFormat}`);
+
+                    summaryDiv.innerText = timingParts.length > 0
+                        ? `${baseSummary} | ${timingParts.join(' | ')}`
+                        : baseSummary;
+
+                    const labelRows = Object.entries(labelCounts)
+                        .map(([label, count], idx) => `<div class="pred-item">#${idx + 1} ${escapeHtml(label)} | total=${count}</div>`)
+                        .join('');
+                    detailsDiv.innerHTML = labelRows || '<div class="pred-item">Không có object nào được detect trong video.</div>';
+                } else {
+                    hideVideo(resultVideo);
+
+                    const imageResults = Array.isArray(data.image_results)
+                        ? data.image_results
+                        : [];
+
+                    renderImageResults(imageResults);
+
+                    const totalRottenCount = Number(data.total_rotten_count || 0);
+                    const rottenCounts = data.rotten_counts || {};
+                    const rottenImagesByLabel = data.rotten_images_by_label || {};
+                    const imagesWithRotten = Array.isArray(data.images_with_rotten)
+                        ? data.images_with_rotten
+                        : [];
+
+                    if (totalRottenCount > 0) {
+                        resultDiv.innerHTML = `⚠️ Kết quả (${escapeHtml(data.model_name)}): Tìm thấy <span style="color:#d83f3f">${Number(data.count || 0)}</span> đối tượng, trong đó có <span style="color:#d83f3f">${totalRottenCount}</span> trái cây hư.`;
+                    } else {
+                        resultDiv.innerHTML = `✅ Kết quả (${escapeHtml(data.model_name)}): Tìm thấy <span style="color:#d83f3f">${Number(data.count || 0)}</span> đối tượng. Không phát hiện trái cây hư.`;
+                    }
+
+                    const rottenSummaryText = Object.entries(rottenCounts)
+                        .map(([label, count]) => `${label}: ${count}`)
+                        .join(' | ');
+                    const rottenImageText = imagesWithRotten.length > 0
+                        ? imagesWithRotten.join(', ')
+                        : 'Không có';
+
+                    summaryDiv.innerText = totalRottenCount > 0
+                        ? `${baseSummary} | Tổng trái cây hư: ${totalRottenCount} | Theo loại: ${rottenSummaryText} | Ảnh chứa trái cây hư: ${rottenImageText}`
+                        : `${baseSummary} | Không phát hiện trái cây hư.`;
+
+                    const imageRows = imageResults.map((row, idx) => {
+                        const rottenCount = Number(row.rotten_count || 0);
+                        const rottenTypeText = Object.entries(row.rotten_counts || {})
+                            .map(([label, count]) => `${label}: ${count}`)
+                            .join(' | ');
+                        return `<div class="pred-item">#${idx + 1} ${escapeHtml(row.source_name || '')} | detect=${Number(row.count || 0)} | rotten=${rottenCount}${rottenTypeText ? ` | ${escapeHtml(rottenTypeText)}` : ''}</div>`;
+                    });
+
+                    const rottenRows = Object.entries(rottenImagesByLabel).map(([label, names], idx) => {
+                        const imageNames = Array.isArray(names) ? names.join(', ') : '';
+                        return `<div class="pred-item">[Rotten ${idx + 1}] ${escapeHtml(label)}: ${Number(rottenCounts[label] || 0)} | Ảnh: ${escapeHtml(imageNames || 'Không có')}</div>`;
+                    });
+
+                    detailsDiv.innerHTML = [...imageRows, ...rottenRows].join('')
+                        || '<div class="pred-item">Không có object nào được detect trong ảnh.</div>';
+                }
+
+                feedbackSection.style.display = 'block';
+            } catch (err) {
+                resultDiv.innerText = `❌ Lỗi: ${err.message || err}`;
+                feedbackSection.style.display = 'none';
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function predict() {
+            if (!selectedFiles || selectedFiles.length === 0) {
+                alert('Vui lòng chọn ảnh hoặc video.');
+                return;
+            }
+
+            if (!modelSelect.value) {
+                alert('Vui lòng chọn model khả dụng.');
+                return;
+            }
+
+            const hasVideo = selectedFiles.some(file => isVideoFile(file));
+            if (hasVideo && selectedFiles.length > 1) {
+                alert('Chỉ hỗ trợ nhiều file cho ảnh. Video chỉ được chọn 1 file.');
+                return;
+            }
+
+            const formData = new FormData();
+            selectedFiles.forEach(file => formData.append('media', file));
+            formData.append('model_key', modelSelect.value);
+
+            const sourceNameFallback = selectedFiles.length > 1
+                ? `${selectedFiles.length} images`
+                : (selectedFiles[0]?.name || 'upload.jpg');
+            await requestPredict(formData, sourceNameFallback);
+        }
+
+        async function detectFromCamera() {
+            if (!modelSelect.value) {
+                alert('Vui lòng chọn model khả dụng.');
+                return;
+            }
+
+            if (!hasActiveCamera()) {
+                alert('Vui lòng mở camera trước khi detect.');
+                return;
+            }
+
+            try {
+                const blob = await captureCameraFrameAsBlob();
+                const captureName = `camera_capture_${Date.now()}.jpg`;
+
+                const formData = new FormData();
+                formData.append('media', blob, captureName);
+                formData.append('model_key', modelSelect.value);
+
+                await requestPredict(formData, captureName);
+            } catch (err) {
+                resultDiv.innerText = `❌ Lỗi camera: ${err.message || err}`;
+            }
+        }
+
+        async function detectTracking() {
+            if (!trackingModelSelect.value) {
+                alert('Vui lòng chọn model khả dụng.');
+                return;
+            }
+
+            if (!trackingVideoFile) {
+                alert('Vui lòng chọn video trước khi detect.');
+                return;
+            }
+
+            if (!trackingLineStart || !trackingLineEnd) {
+                alert('Vui lòng vẽ line trên frame đầu trước khi detect.');
+                return;
+            }
+
+            setTrackingLoading(true);
+            trackingResult.innerText = '⏳ Đang detect + tracking + counting...';
+            trackingSummary.innerText = '';
+            renderTrackingSummaryTable([]);
+
+            try {
+                const formData = new FormData();
+                formData.append('video', trackingVideoFile);
+                formData.append('model_key', trackingModelSelect.value);
+                formData.append('line_x1', String(Math.round(trackingLineStart.x)));
+                formData.append('line_y1', String(Math.round(trackingLineStart.y)));
+                formData.append('line_x2', String(Math.round(trackingLineEnd.x)));
+                formData.append('line_y2', String(Math.round(trackingLineEnd.y)));
+
+                const response = await fetch('/predict-object-check', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const data = await response.json();
+
+                if (data.status !== 'success') {
+                    throw new Error(data.error || 'Object check detect failed.');
+                }
+
+                trackingResultVideo.src = `${data.video_url}?t=${Date.now()}`;
+                trackingResultVideo.style.display = 'block';
+                trackingResultVideo.load();
+                trackingResultVideo.currentTime = 0;
+                trackingResultVideo.play().catch(() => {
+                    // Browser might block autoplay.
+                });
+
+                trackingResult.innerHTML = `✅ Đã đếm <span style="color:#d83f3f">${Number(data.count || 0)}</span> object đi qua line (${escapeHtml(data.model_name || '')}).`;
+
+                const processedFrames = Number(data.processed_frames || 0);
+                const outputFps = Number(data.output_fps || 0);
+                const outputDuration = Number(data.output_duration_sec || 0);
+                const uniqueIds = Number(data.unique_track_ids_counted || 0);
+
+                const parts = [];
+                if (processedFrames > 0) parts.push(`frames=${processedFrames}`);
+                if (outputFps > 0) parts.push(`fps=${outputFps.toFixed(2)}`);
+                if (outputDuration > 0) parts.push(`duration≈${outputDuration.toFixed(2)}s`);
+                parts.push(`unique_ids=${uniqueIds}`);
+
+                trackingSummary.innerText = parts.join(' | ');
+
+                const rows = Array.isArray(data.summary_rows)
+                    ? data.summary_rows
+                    : Object.entries(data.label_counts || {}).map(([label, count]) => ({ label, count }));
+                renderTrackingSummaryTable(rows);
+
+                const line = data.line || {};
+                if (Number.isFinite(Number(line.x1)) && Number.isFinite(Number(line.y1))
+                    && Number.isFinite(Number(line.x2)) && Number.isFinite(Number(line.y2))) {
+                    setLineStatus(`Line đã dùng: (${line.x1}, ${line.y1}) -> (${line.x2}, ${line.y2})`, false);
+                }
+            } catch (err) {
+                trackingResult.innerText = `❌ Lỗi detect tracking: ${err.message || err}`;
+            } finally {
+                setTrackingLoading(false);
+            }
+        }
+
+        async function submitFeedback(feedbackKey) {
+            if (!currentResultMeta) {
+                alert('Bạn cần dự đoán trước khi đánh giá.');
+                return;
+            }
+
+            feedbackMessage.innerText = 'Đang lưu đánh giá...';
+
+            try {
+                const response = await fetch('/feedback', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        feedback_key: feedbackKey,
+                        model_key: currentResultMeta.model_key,
+                        model_name: currentResultMeta.model_name,
+                        media_type: currentResultMeta.media_type,
+                        source_name: currentResultMeta.source_name,
+                        count: currentResultMeta.count,
+                    }),
+                });
+
+                const data = await response.json();
+                if (data.status !== 'success') {
+                    throw new Error(data.error || 'Cannot save feedback.');
+                }
+
+                feedbackMessage.innerText = `Đã lưu: ${data.row.feedback_label} (${data.row.model_name})`;
+                await loadFeedbackTable();
+            } catch (err) {
+                feedbackMessage.innerText = `Lỗi lưu feedback: ${err.message || err}`;
+            }
+        }
+
+        predictBtn.addEventListener('click', predict);
+        openCameraBtn.addEventListener('click', openCamera);
+        stopCameraBtn.addEventListener('click', stopCamera);
+        detectCameraBtn.addEventListener('click', detectFromCamera);
+
+        fruitTabBtn.addEventListener('click', () => setActiveTab('fruit'));
+        objectTabBtn.addEventListener('click', () => setActiveTab('object'));
+        clearLineBtn.addEventListener('click', clearLineSelection);
+        detectTrackingBtn.addEventListener('click', detectTracking);
+
+        document.querySelectorAll('.feedback-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                submitFeedback(btn.dataset.feedback || '');
+            });
+        });
+
+        async function init() {
+            setupTrackingCanvasInteractions();
+            renderTrackingCanvas();
+            setActiveTab('fruit');
+            await loadModels();
+            await loadFeedbackTable();
+        }
+
+        window.addEventListener('beforeunload', () => {
+            stopCamera();
+            clearPreviewVideoUrl();
+        });
+
+        init();
+    </script>
+</body>
+</html>

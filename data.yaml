@@ -1,0 +1,14 @@
+names:
+- Apple_Fresh
+- Apple_Rotten
+- BellPepper_Fresh
+- BellPepper_Rotten
+- Carrot_Fresh
+- Carrot_Rotten
+- Cucumber_Fresh
+- Cucumber_Rotten
+- Lime_Fresh
+- Lime_Rotten
+- Strawberry_Fresh
+- Strawberry_Rotten
+nc: 12
